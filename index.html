@@ -1,206 +1,237 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Freddo Hosting</title>
-
+<title>Ticket Systeem</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+<!-- Font Awesome voor iconen (optioneel) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+  /* Reset en basisstijl */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-* {
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+  body {
     font-family: 'Inter', sans-serif;
-}
+    /* Moderne achtergrond met gradient en animatie */
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background-size: 400% 400%;
+    animation: gradientAnimation 20s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: #fff;
+  }
 
-body {
-    background: radial-gradient(circle at top, #0f172a, #000);
-    color:white;
-    overflow-x:hidden;
-}
+  @keyframes gradientAnimation {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
 
-/* background glow */
-.glow {
-    position:absolute;
-    width:600px;
-    height:600px;
-    background:rgba(0,255,200,0.15);
-    filter:blur(120px);
-    top:-100px;
-    left:-100px;
-    animation: float 6s ease-in-out infinite;
-}
+  /* Header met logo en banner */
+  header {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+  }
 
-.glow2 {
-    position:absolute;
-    width:500px;
-    height:500px;
-    background:rgba(100,100,255,0.15);
-    filter:blur(120px);
-    bottom:-100px;
-    right:-100px;
-    animation: float 8s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%,100% { transform:translateY(0px); }
-    50% { transform:translateY(30px); }
-}
-
-/* container */
-.container {
-    position:relative;
-    z-index:2;
-    text-align:center;
-    padding:100px 20px;
-}
-
-/* title */
-h1 {
-    font-size:55px;
-    font-weight:800;
-    background: linear-gradient(90deg,#00ffd5,#4f46e5,#00ffd5);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    animation: glowText 3s infinite;
-}
-
-@keyframes glowText {
-    0%,100% { filter: drop-shadow(0 0 10px #00ffd5); }
-    50% { filter: drop-shadow(0 0 25px #4f46e5); }
-}
-
-p {
-    margin-top:15px;
-    color:#aaa;
-    font-size:18px;
-}
-
-/* buttons */
-.btns {
-    margin-top:30px;
-}
-
-button {
-    padding:12px 20px;
-    margin:10px;
-    border:none;
-    border-radius:12px;
-    font-weight:600;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-.primary {
-    background: linear-gradient(90deg,#00ffd5,#4f46e5);
-    color:black;
-}
-
-.primary:hover {
-    transform:scale(1.05);
-}
-
-.secondary {
-    background:#1f2937;
-    color:white;
-}
-
-.secondary:hover {
-    background:#374151;
-    transform:scale(1.05);
-}
-
-/* cards */
-.grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:20px;
-    margin-top:60px;
-}
-
-.card {
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.1);
-    padding:20px;
-    border-radius:15px;
+  /* Logo banner */
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     backdrop-filter: blur(10px);
-    transition:0.3s;
-}
+    animation: floatDown 2s ease-out;
+  }
 
-.card:hover {
-    transform:translateY(-10px);
-    border-color:#00ffd5;
-}
+  @keyframes floatDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 
-.card h3 {
-    margin-bottom:10px;
-}
+  /* Banner onder logo */
+  .banner {
+    margin-top: 10px;
+    font-size: 1.2rem;
+    color: #ccc;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  }
 
-/* footer */
-footer {
-    margin-top:80px;
-    color:#666;
-    font-size:14px;
-}
+  /* Titel */
+  h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+
+  /* Buttons stijl */
+  button {
+    background: #5865F2;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  button:hover {
+    background: #3b4b9d;
+    box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Tickets container */
+  .tickets {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Ticket stijl */
+  .ticket {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  .ticket h2 {
+    margin-bottom: 10px;
+  }
+
+  .ticket p {
+    margin-bottom: 10px;
+  }
+
+  /* Animatie voor tickets */
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(20px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+
+  /* Footer met Discord link */
+  footer {
+    margin-top: 40px;
+    font-size: 1rem;
+    text-align: center;
+    color: #aaa;
+  }
+
+  footer a {
+    color: #66fcf1;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  footer a:hover {
+    color: #45a29e;
+  }
+
+  /* Extra styling voor kleine schermen */
+  @media(max-width: 600px) {
+    h1 {
+      font-size: 2em;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+    }
+  }
 </style>
 </head>
-
 <body>
 
-<div class="glow"></div>
-<div class="glow2"></div>
+<!-- Header met logo en banner -->
+<header>
+  <div class="logo">
+    <i class="fas fa-ticket-alt"></i> TicketSysteem
+  </div>
+  <div class="banner">Snelle en makkelijke support tickets</div>
+</header>
 
-<div class="container">
+<h1>Ticket Systeem</h1>
+<button id="createTicket"><i class="fas fa-plus"></i> Maak een nieuw ticket</button>
 
-    <h1>🔥 Freddo Hosting</h1>
-    <p>Fast Discord Bot Hosting • Dashboard • Premium System • Top.gg Rewards</p>
-
-    <div class="btns">
-        <button class="primary" onclick="login()">Login with Discord</button>
-        <button class="secondary" onclick="vote()">Vote on Top.gg</button>
-    </div>
-
-    <div class="grid">
-
-        <div class="card">
-            <h3>🤖 Bot Hosting</h3>
-            <p>Deploy and manage Discord bots instantly.</p>
-        </div>
-
-        <div class="card">
-            <h3>📊 Dashboard</h3>
-            <p>Control everything from a clean UI panel.</p>
-        </div>
-
-        <div class="card">
-            <h3>⭐ Premium</h3>
-            <p>Vote on Top.gg to unlock premium features.</p>
-        </div>
-
-        <div class="card">
-            <h3>⚡ Fast API</h3>
-            <p>Optimized backend for speed and stability.</p>
-        </div>
-
-    </div>
-
-    <footer>
-        © 2026 Freddo Hosting • All rights reserved
-    </footer>
-
+<div class="tickets" id="ticketsContainer">
+  <!-- Tickets worden hier geladen -->
 </div>
 
+<!-- Scripts -->
 <script>
-function login() {
-    window.location.href =
-    "https://discord.com/oauth2/authorize?client_id=1510684723306041555&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A5050%2F&scope=identify+guilds+email+guilds.join";
-}
+  document.getElementById('createTicket').addEventListener('click', () => {
+    // API call om ticket te maken
+    fetch('/api/create-ticket', {method: 'POST'})
+      .then(res => res.json())
+      .then(data => {
+        addTicketToDOM(data.ticketId, data.ticketLink);
+      });
+  });
 
-function vote() {
-    window.open("https://top.gg/", "_blank");
-}
+  function addTicketToDOM(id, link) {
+    const container = document.getElementById('ticketsContainer');
+    const div = document.createElement('div');
+    div.className = 'ticket';
+    div.innerHTML = `
+      <h2>Ticket #${id}</h2>
+      <p>Link: <a href="${link}" target="_blank" style="color:#66fcf1;">${link}</a></p>
+      <button style="background:#e74c3c;" onclick="closeTicket('${id}')"><i class="fas fa-times"></i> Sluit Ticket</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function closeTicket(id) {
+    // API call om ticket te sluiten
+    fetch('/api/close-ticket', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ticketId: id})
+    }).then(res => res.json())
+      .then(() => {
+        alert('Ticket gesloten');
+        // Ticket verwijderen of markeren
+        const tickets = document.querySelectorAll('.ticket');
+        tickets.forEach(t => {
+          if(t.querySelector('h2').innerText.includes(`#${id}`)) {
+            t.style.opacity = '0';
+            setTimeout(() => t.remove(), 300);
+          }
+        });
+      });
+  }
 </script>
 
 </body>
