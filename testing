@@ -1,119 +1,1318 @@
+import ctypes
+import os
+import shutil
+import subprocess
+import sys
+import threading
+import tkinter as tk
+import webbrowser
+from pathlib import Path
+from tkinter import messagebox, ttk
+
+
 # ============================================================
-# WINDOWS 11 - VEILIG OPSCHONEN, REPAREREN & UPDATEN
-# PowerShell - Administrator
+# FREDDODEV WINDOWS FIXER
 # ============================================================
 
-$ErrorActionPreference = "Continue"
+APP_NAME = "FreddoDev Windows Fixer"
 
-Clear-Host
 
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "        WINDOWS 11 ONDERHOUD & REPARATIE" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+# ============================================================
+# ADMINISTRATOR
+# ============================================================
 
-# Administrator controleren
-$principal = New-Object Security.Principal.WindowsPrincipal(
-    [Security.Principal.WindowsIdentity]::GetCurrent()
+def require_admin():
+    if os.name != "nt":
+        return
+
+    try:
+        if ctypes.windll.shell32.IsUserAnAdmin():
+            return
+    except Exception:
+        pass
+
+    script = str(Path(__file__).resolve())
+    args = subprocess.list2cmdline([script, *sys.argv[1:]])
+
+    result = ctypes.windll.shell32.ShellExecuteW(
+        None,
+        "runas",
+        sys.executable,
+        args,
+        str(Path(script).parent),
+        1,
+    )
+
+    if result <= 32:
+        raise RuntimeError("Administratorrechten konden niet worden aangevraagd.")
+
+    sys.exit()
+
+
+require_admin()
+
+
+# ============================================================
+# THEME
+# ============================================================
+
+BG = "#0b0f14"
+CARD = "#121922"
+CARD_HOVER = "#182330"
+ACCENT = "#7c5cff"
+ACCENT_HOVER = "#947aff"
+GREEN = "#35d07f"
+RED = "#ff5c70"
+ORANGE = "#ffb454"
+TEXT = "#f4f7fb"
+MUTED = "#8e9aaa"
+BORDER = "#202b38"
+
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def run_async(command, title, description, timeout=1800):
+    """
+    Voert een Windows-command uit zonder de GUI te blokkeren.
+    """
+
+    def worker():
+        try:
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                shell=False,
+                creationflags=getattr(
+                    subprocess,
+                    "CREATE_NO_WINDOW",
+                    0
+                ),
+            )
+
+            output = (result.stdout or "")
+
+            if result.stderr:
+                output += "\n\n" + result.stderr
+
+            if not output.strip():
+                output = "Opdracht voltooid."
+
+            root.after(
+                0,
+                lambda: show_result(
+                    title,
+                    description,
+                    result.returncode,
+                    output,
+                ),
+            )
+
+        except subprocess.TimeoutExpired:
+            root.after(
+                0,
+                lambda: show_result(
+                    title,
+                    description,
+                    1,
+                    "De opdracht duurde te lang en is gestopt.",
+                ),
+            )
+
+        except Exception as error:
+            root.after(
+                0,
+                lambda: show_result(
+                    title,
+                    description,
+                    1,
+                    str(error),
+                ),
+            )
+
+    status_var.set(f"●  Bezig met {title}...")
+    status_label.configure(foreground=ORANGE)
+
+    threading.Thread(
+        target=worker,
+        daemon=True,
+    ).start()
+
+
+def show_result(title, description, returncode, output):
+    status_var.set(
+        "●  Klaar"
+        if returncode == 0
+        else "●  Klaar met meldingen"
+    )
+
+    status_label.configure(
+        foreground=GREEN if returncode == 0 else ORANGE
+    )
+
+    window = tk.Toplevel(root)
+    window.title(title)
+    window.geometry("850x560")
+    window.configure(bg=BG)
+
+    window.transient(root)
+    window.grab_set()
+
+    tk.Label(
+        window,
+        text=title,
+        font=("Segoe UI", 18, "bold"),
+        fg=TEXT,
+        bg=BG,
+    ).pack(
+        anchor="w",
+        padx=24,
+        pady=(22, 5),
+    )
+
+    tk.Label(
+        window,
+        text=description,
+        font=("Segoe UI", 10),
+        fg=MUTED,
+        bg=BG,
+        wraplength=790,
+        justify="left",
+    ).pack(
+        anchor="w",
+        padx=24,
+        pady=(0, 15),
+    )
+
+    text_frame = tk.Frame(
+        window,
+        bg=CARD,
+        highlightbackground=BORDER,
+        highlightthickness=1,
+    )
+
+    text_frame.pack(
+        fill="both",
+        expand=True,
+        padx=24,
+        pady=5,
+    )
+
+    text = tk.Text(
+        text_frame,
+        wrap="word",
+        bg=CARD,
+        fg="#d9e0ea",
+        insertbackground=TEXT,
+        relief="flat",
+        font=("Cascadia Mono", 9),
+        padx=14,
+        pady=14,
+    )
+
+    text.pack(
+        fill="both",
+        expand=True,
+    )
+
+    text.insert("1.0", output)
+    text.configure(state="disabled")
+
+    tk.Button(
+        window,
+        text="Sluiten",
+        command=window.destroy,
+        bg=ACCENT,
+        fg="white",
+        activebackground=ACCENT_HOVER,
+        activeforeground="white",
+        relief="flat",
+        bd=0,
+        font=("Segoe UI", 10, "bold"),
+        padx=25,
+        pady=9,
+        cursor="hand2",
+    ).pack(
+        pady=18,
+    )
+
+
+def launch_settings(uri):
+    try:
+        os.startfile(uri)
+    except Exception as error:
+        messagebox.showerror(
+            "FreddoDev",
+            f"Instellingen openen mislukt:\n\n{error}",
+        )
+
+
+# ============================================================
+# WINDOWS TOOLS
+# ============================================================
+
+def open_device_manager():
+    try:
+        subprocess.Popen(
+            ["mmc.exe", "devmgmt.msc"],
+            creationflags=getattr(
+                subprocess,
+                "CREATE_NO_WINDOW",
+                0,
+            ),
+        )
+    except Exception as error:
+        messagebox.showerror(
+            "Apparaatbeheer",
+            str(error),
+        )
+
+
+def open_windows_update():
+    launch_settings("ms-settings:windowsupdate")
+
+
+def open_graphics_settings():
+    launch_settings(
+        "ms-settings:display-advancedgraphics"
+    )
+
+
+def open_power_settings():
+    launch_settings(
+        "ms-settings:powersleep"
+    )
+
+
+# ============================================================
+# RESTORE POINT
+# ============================================================
+
+def create_restore_point():
+    if not messagebox.askyesno(
+        "Herstelpunt",
+        "Wil je eerst een Windows-herstelpunt maken?\n\n"
+        "Dit is aanbevolen voordat je reparaties uitvoert.",
+    ):
+        return
+
+    run_async(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            (
+                "Checkpoint-Computer "
+                "-Description 'FreddoDev Fixer' "
+                "-RestorePointType 'MODIFY_SETTINGS'"
+            ),
+        ],
+        "Herstelpunt maken",
+        "Windows probeert een herstelpunt te maken.",
+        timeout=900,
+    )
+
+
+# ============================================================
+# WINDOWS REPAIR
+# ============================================================
+
+def fix_windows():
+    """
+    DISM + SFC.
+    """
+
+    if not messagebox.askyesno(
+        "Windows repareren",
+        "FreddoDev gaat Windows controleren en repareren.\n\n"
+        "Dit kan enkele minuten duren.\n\n"
+        "Doorgaan?",
+    ):
+        return
+
+    run_async(
+        [
+            "cmd.exe",
+            "/c",
+            "DISM.exe /Online /Cleanup-Image /RestoreHealth "
+            "&& sfc.exe /scannow",
+        ],
+        "Windows reparatie",
+        (
+            "DISM repareert de Windows-componenten en SFC "
+            "controleert daarna de systeembestanden."
+        ),
+        timeout=3600,
+    )
+
+
+# ============================================================
+# DISK CHECK
+# ============================================================
+
+def fix_disk():
+    run_async(
+        [
+            "chkdsk.exe",
+            "C:",
+            "/scan",
+        ],
+        "Schijfcontrole",
+        (
+            "Windows controleert station C: op "
+            "bestandssysteemproblemen."
+        ),
+        timeout=3600,
+    )
+
+
+# ============================================================
+# GAMING FIX
+# ============================================================
+
+def gaming_fix():
+    """
+    Veilige Windows-optimalisaties:
+    - High Performance power plan
+    - Windows Game Mode
+    - Game DVR uitschakelen
+    - GPU timeout verhogen
+    - Windows repair
+    """
+
+    answer = messagebox.askyesno(
+        "Gaming Fix",
+        "FreddoDev gaat enkele Windows-instellingen aanpassen "
+        "die kunnen helpen tegen haperingen, freezes en crashes tijdens gamen.\n\n"
+        "Er worden geen persoonlijke bestanden verwijderd.\n\n"
+        "Doorgaan?",
+    )
+
+    if not answer:
+        return
+
+    commands = (
+        'powercfg /setactive SCHEME_MIN '
+        '&& reg add "HKCU\\Software\\Microsoft\\GameBar" '
+        '/v AllowAutoGameMode /t REG_DWORD /d 1 /f '
+        '&& reg add "HKCU\\System\\GameConfigStore" '
+        '/v GameDVR_Enabled /t REG_DWORD /d 0 /f '
+        '&& reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR" '
+        '/v AppCaptureEnabled /t REG_DWORD /d 0 /f '
+        '&& reg add "HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers" '
+        '/v TdrDelay /t REG_DWORD /d 10 /f '
+        '&& DISM.exe /Online /Cleanup-Image /RestoreHealth '
+        '&& sfc.exe /scannow'
+    )
+
+    run_async(
+        [
+            "cmd.exe",
+            "/c",
+            commands,
+        ],
+        "Gaming Fix",
+        (
+            "Windows gaming-instellingen worden gecontroleerd "
+            "en Windows wordt gerepareerd.\n\n"
+            "Na afloop is een herstart aanbevolen."
+        ),
+        timeout=3600,
+    )
+
+
+# ============================================================
+# GPU RESET
+# ============================================================
+
+def gpu_reset():
+    """
+    Windows heeft een ingebouwde GPU-driver reset:
+    Win + Ctrl + Shift + B
+
+    We sturen deze toetsencombinatie via PowerShell.
+    """
+
+    if not messagebox.askyesno(
+        "Graphics Driver Reset",
+        "De grafische driver wordt opnieuw geïnitialiseerd.\n\n"
+        "Je scherm kan kort zwart worden of knipperen.\n\n"
+        "Doorgaan?",
+    ):
+        return
+
+    try:
+        # Win + Ctrl + Shift + B
+        import ctypes
+
+        VK_LWIN = 0x5B
+        VK_CONTROL = 0x11
+        VK_SHIFT = 0x10
+        VK_B = 0x42
+
+        KEYEVENTF_KEYUP = 0x0002
+
+        user32 = ctypes.windll.user32
+
+        for key in [VK_LWIN, VK_CONTROL, VK_SHIFT, VK_B]:
+            user32.keybd_event(key, 0, 0, 0)
+
+        for key in [VK_B, VK_SHIFT, VK_CONTROL, VK_LWIN]:
+            user32.keybd_event(
+                key,
+                0,
+                KEYEVENTF_KEYUP,
+                0,
+            )
+
+        status_var.set("●  Graphics driver opnieuw geïnitialiseerd")
+        status_label.configure(
+            foreground=GREEN
+        )
+
+    except Exception as error:
+        messagebox.showerror(
+            "Graphics",
+            f"Graphics reset mislukt:\n\n{error}",
+        )
+
+
+def graphics_tools():
+    window = tk.Toplevel(root)
+    window.title("FreddoDev Graphics Center")
+    window.geometry("560x430")
+    window.configure(bg=BG)
+    window.transient(root)
+
+    tk.Label(
+        window,
+        text="Graphics Center",
+        font=("Segoe UI", 21, "bold"),
+        fg=TEXT,
+        bg=BG,
+    ).pack(
+        anchor="w",
+        padx=25,
+        pady=(25, 3),
+    )
+
+    tk.Label(
+        window,
+        text=(
+            "Tools voor NVIDIA, AMD en Intel graphics.\n"
+            "FreddoDev verwijdert je graphicsdriver niet automatisch."
+        ),
+        font=("Segoe UI", 10),
+        fg=MUTED,
+        bg=BG,
+        justify="left",
+    ).pack(
+        anchor="w",
+        padx=25,
+        pady=(0, 20),
+    )
+
+    make_button(
+        window,
+        "↻  Graphics driver resetten",
+        gpu_reset,
+        accent=ACCENT,
+    ).pack(
+        fill="x",
+        padx=25,
+        pady=6,
+    )
+
+    make_button(
+        window,
+        "▣  Beeldschermadapters openen",
+        open_device_manager,
+    ).pack(
+        fill="x",
+        padx=25,
+        pady=6,
+    )
+
+    make_button(
+        window,
+        "⚙  Geavanceerde graphicsinstellingen",
+        open_graphics_settings,
+    ).pack(
+        fill="x",
+        padx=25,
+        pady=6,
+    )
+
+    make_button(
+        window,
+        "↻  Windows Update",
+        open_windows_update,
+    ).pack(
+        fill="x",
+        padx=25,
+        pady=6,
+    )
+
+
+# ============================================================
+# CLEANUP / RESET
+# ============================================================
+
+def cleanup_user_files():
+    """
+    Verwijdert standaard gebruikersmappen:
+    Downloads
+    Pictures
+    Screenshots
+    Videos
+    Documents wordt bewust NIET verwijderd.
+
+    Steam en Discord worden niet aangeraakt.
+    """
+
+    user = Path.home()
+
+    folders = {
+        "Downloads": user / "Downloads",
+        "Pictures": user / "Pictures",
+        "Screenshots": user / "Pictures" / "Screenshots",
+        "Videos": user / "Videos",
+    }
+
+    existing = [
+        (name, path)
+        for name, path in folders.items()
+        if path.exists()
+    ]
+
+    if not existing:
+        messagebox.showinfo(
+            "Opschonen",
+            "Er zijn geen geselecteerde mappen gevonden.",
+        )
+        return
+
+    names = "\n".join(
+        f"• {name}: {path}"
+        for name, path in existing
+    )
+
+    answer = messagebox.askyesno(
+        "⚠ Bestanden verwijderen",
+        "LET OP: de inhoud van deze mappen wordt verwijderd:\n\n"
+        f"{names}\n\n"
+        "Steam en Discord worden NIET verwijderd.\n"
+        "Documenten worden NIET verwijderd.\n\n"
+        "Deze actie kan niet eenvoudig ongedaan worden gemaakt.\n\n"
+        "Wil je doorgaan?",
+        icon="warning",
+    )
+
+    if not answer:
+        return
+
+    deleted = 0
+    errors = []
+
+    for name, folder in existing:
+
+        # Screenshots zit binnen Pictures.
+        # Als Pictures zelf verwijderd wordt, hoeven we Screenshots
+        # niet nogmaals te verwijderen.
+        if name == "Screenshots" and folders["Pictures"].exists():
+            continue
+
+        try:
+            for item in folder.iterdir():
+                try:
+                    if item.is_dir():
+                        shutil.rmtree(
+                            item,
+                            ignore_errors=False,
+                        )
+                    else:
+                        item.unlink(
+                            missing_ok=True
+                        )
+
+                    deleted += 1
+
+                except Exception as error:
+                    errors.append(
+                        f"{item}: {error}"
+                    )
+
+        except Exception as error:
+            errors.append(
+                f"{folder}: {error}"
+            )
+
+    output = (
+        f"Opschonen voltooid.\n\n"
+        f"Verwijderde items: {deleted}\n"
+        f"Fouten: {len(errors)}\n\n"
+        "Steam en Discord zijn ongemoeid gelaten."
+    )
+
+    if errors:
+        output += "\n\nMeldingen:\n" + "\n".join(errors)
+
+    show_result(
+        "Opschonen voltooid",
+        "De geselecteerde gebruikersmappen zijn opgeschoond.",
+        0 if not errors else 1,
+        output,
+    )
+
+
+def reset_freddodev():
+    """
+    Gecombineerde reset:
+    1. Restore point
+    2. Cleanup
+    3. Windows repair
+    """
+
+    answer = messagebox.askyesno(
+        "FreddoDev Reset",
+        "Deze reset doet het volgende:\n\n"
+        "✓ Windows systeembestanden repareren\n"
+        "✓ Windows-componenten repareren\n"
+        "✓ Downloads/Pictures/Videos opschonen\n"
+        "✓ Steam en Discord behouden\n"
+        "✓ Persoonlijke Documenten behouden\n\n"
+        "De geselecteerde bestanden worden permanent verwijderd.\n\n"
+        "Wil je doorgaan?",
+        icon="warning",
+    )
+
+    if not answer:
+        return
+
+    # Eerst restore point.
+    create_restore_point()
+
+    # Daarna cleanup.
+    cleanup_user_files()
+
+    # Tenslotte Windows repair.
+    root.after(
+        1000,
+        fix_windows,
+    )
+
+
+# ============================================================
+# TEMP CLEANUP
+# ============================================================
+
+def clean_temp():
+    if not messagebox.askyesno(
+        "Tijdelijke bestanden",
+        "Tijdelijke Windows-bestanden opschonen?\n\n"
+        "Dit verwijdert geen normale documenten.",
+    ):
+        return
+
+    commands = (
+        'del /q /f /s "%TEMP%\\*" >nul 2>&1 '
+        '&& del /q /f /s "C:\\Windows\\Temp\\*" >nul 2>&1'
+    )
+
+    run_async(
+        [
+            "cmd.exe",
+            "/c",
+            commands,
+        ],
+        "Temp cleanup",
+        "Tijdelijke bestanden worden opgeschoond.",
+    )
+
+
+# ============================================================
+# OTHER
+# ============================================================
+
+def open_support():
+    webbrowser.open(
+        "https://support.microsoft.com/windows"
+    )
+
+
+def system_info():
+    run_async(
+        [
+            "cmd.exe",
+            "/c",
+            "systeminfo",
+        ],
+        "Systeeminformatie",
+        "Windows-systeeminformatie.",
+        timeout=120,
+    )
+
+
+# ============================================================
+# MODERN BUTTON
+# ============================================================
+
+def make_button(
+    parent,
+    text,
+    command,
+    accent=None,
+):
+    button = tk.Button(
+        parent,
+        text=text,
+        command=command,
+        bg=accent or CARD,
+        fg=TEXT,
+        activebackground=ACCENT_HOVER if accent else CARD_HOVER,
+        activeforeground="white",
+        relief="flat",
+        bd=0,
+        font=("Segoe UI", 10, "bold"),
+        anchor="w",
+        padx=18,
+        pady=12,
+        cursor="hand2",
+    )
+
+    normal = accent or CARD
+    hover = ACCENT_HOVER if accent else CARD_HOVER
+
+    button.bind(
+        "<Enter>",
+        lambda event: button.configure(
+            bg=hover
+        ),
+    )
+
+    button.bind(
+        "<Leave>",
+        lambda event: button.configure(
+            bg=normal
+        ),
+    )
+
+    return button
+
+
+def make_card(parent):
+    frame = tk.Frame(
+        parent,
+        bg=CARD,
+        highlightbackground=BORDER,
+        highlightthickness=1,
+    )
+    return frame
+
+
+# ============================================================
+# GUI
+# ============================================================
+
+root = tk.Tk()
+
+root.title(APP_NAME)
+root.geometry("900x760")
+root.minsize(760, 650)
+root.configure(bg=BG)
+
+
+# ttk styling
+style = ttk.Style(root)
+
+try:
+    style.theme_use("clam")
+except Exception:
+    pass
+
+style.configure(
+    "TProgressbar",
+    troughcolor=CARD,
+    background=ACCENT,
+    bordercolor=CARD,
+    lightcolor=ACCENT,
+    darkcolor=ACCENT,
 )
 
-if (-not $principal.IsInRole(
-    [Security.Principal.WindowsBuiltInRole]::Administrator
-)) {
-    Write-Host "FOUT: PowerShell moet als Administrator worden gestart." -ForegroundColor Red
-    Read-Host "Druk op Enter"
-    exit
-}
 
-Write-Host "[1/8] Tijdelijke bestanden opruimen..." -ForegroundColor Yellow
+# ============================================================
+# HEADER
+# ============================================================
 
-Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+header = tk.Frame(
+    root,
+    bg=BG,
+)
 
-Write-Host "      Klaar." -ForegroundColor Green
+header.pack(
+    fill="x",
+    padx=32,
+    pady=(28, 12),
+)
 
+tk.Label(
+    header,
+    text="FREDDODEV",
+    font=("Segoe UI", 11, "bold"),
+    fg=ACCENT,
+    bg=BG,
+).pack(
+    anchor="w"
+)
 
-Write-Host ""
-Write-Host "[2/8] Windows Update-cache vernieuwen..." -ForegroundColor Yellow
+tk.Label(
+    header,
+    text="Windows Fixer",
+    font=("Segoe UI", 29, "bold"),
+    fg=TEXT,
+    bg=BG,
+).pack(
+    anchor="w"
+)
 
-Stop-Service wuauserv -Force -ErrorAction SilentlyContinue
-Stop-Service bits -Force -ErrorAction SilentlyContinue
-
-Remove-Item `
-    "C:\Windows\SoftwareDistribution\Download\*" `
-    -Recurse `
-    -Force `
-    -ErrorAction SilentlyContinue
-
-Start-Service bits -ErrorAction SilentlyContinue
-Start-Service wuauserv -ErrorAction SilentlyContinue
-
-Write-Host "      Klaar." -ForegroundColor Green
-
-
-Write-Host ""
-Write-Host "[3/8] Windows componenten opruimen..." -ForegroundColor Yellow
-
-DISM.exe /Online /Cleanup-Image /StartComponentCleanup
-
-Write-Host "      Klaar." -ForegroundColor Green
-
-
-Write-Host ""
-Write-Host "[4/8] Windows installatie repareren..." -ForegroundColor Yellow
-
-DISM.exe /Online /Cleanup-Image /RestoreHealth
-
-Write-Host "      Klaar." -ForegroundColor Green
-
-
-Write-Host ""
-Write-Host "[5/8] Windows systeembestanden controleren..." -ForegroundColor Yellow
-
-sfc.exe /scannow
-
-Write-Host "      Klaar." -ForegroundColor Green
+tk.Label(
+    header,
+    text=(
+        "Windows 11 repareren • Gaming optimaliseren • "
+        "Graphics herstellen • Veilig opschonen"
+    ),
+    font=("Segoe UI", 10),
+    fg=MUTED,
+    bg=BG,
+).pack(
+    anchor="w",
+    pady=(2, 0),
+)
 
 
-Write-Host ""
-Write-Host "[6/8] C-schijf controleren..." -ForegroundColor Yellow
+# ============================================================
+# HERO CARD
+# ============================================================
 
-chkdsk.exe C: /scan
+hero = tk.Frame(
+    root,
+    bg=CARD,
+    highlightbackground=BORDER,
+    highlightthickness=1,
+)
 
-Write-Host "      Klaar." -ForegroundColor Green
+hero.pack(
+    fill="x",
+    padx=32,
+    pady=10,
+)
+
+hero_left = tk.Frame(
+    hero,
+    bg=CARD,
+)
+
+hero_left.pack(
+    side="left",
+    fill="both",
+    expand=True,
+    padx=24,
+    pady=20,
+)
+
+tk.Label(
+    hero_left,
+    text="⚡ Gaming & Windows",
+    font=("Segoe UI", 17, "bold"),
+    fg=TEXT,
+    bg=CARD,
+).pack(
+    anchor="w"
+)
+
+tk.Label(
+    hero_left,
+    text=(
+        "Repareer Windows, verminder systeemproblemen en "
+        "reset je graphics driver."
+    ),
+    font=("Segoe UI", 10),
+    fg=MUTED,
+    bg=CARD,
+).pack(
+    anchor="w",
+    pady=(4, 13),
+)
+
+make_button(
+    hero_left,
+    "⚡  START GAMING FIX",
+    gaming_fix,
+    accent=ACCENT,
+).pack(
+    anchor="w"
+)
 
 
-Write-Host ""
-Write-Host "[7/8] Windows Update openen..." -ForegroundColor Yellow
+# ============================================================
+# MAIN CONTENT
+# ============================================================
 
-Start-Process "ms-settings:windowsupdate"
+content = tk.Frame(
+    root,
+    bg=BG,
+)
 
-Write-Host "      Windows Update is geopend." -ForegroundColor Green
+content.pack(
+    fill="both",
+    expand=True,
+    padx=32,
+    pady=10,
+)
+
+content.grid_columnconfigure(
+    0,
+    weight=1,
+)
+
+content.grid_columnconfigure(
+    1,
+    weight=1,
+)
 
 
-Write-Host ""
-Write-Host "[8/8] Opstartprogramma's beschikbaar maken..." -ForegroundColor Yellow
+# ============================================================
+# REPAIR CARD
+# ============================================================
 
-Start-Process "ms-settings:startupapps"
+repair_card = make_card(content)
 
-Write-Host "      Opstart-apps zijn geopend." -ForegroundColor Green
+repair_card.grid(
+    row=0,
+    column=0,
+    sticky="nsew",
+    padx=(0, 7),
+    pady=7,
+)
+
+tk.Label(
+    repair_card,
+    text="🛠  Windows repareren",
+    font=("Segoe UI", 15, "bold"),
+    fg=TEXT,
+    bg=CARD,
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(18, 3),
+)
+
+tk.Label(
+    repair_card,
+    text="Voor crashes, fouten en vastlopers.",
+    font=("Segoe UI", 9),
+    fg=MUTED,
+    bg=CARD,
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(0, 12),
+)
+
+make_button(
+    repair_card,
+    "Windows repareren  •  DISM + SFC",
+    fix_windows,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
+
+make_button(
+    repair_card,
+    "Schijf controleren  •  CHKDSK",
+    fix_disk,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
+
+make_button(
+    repair_card,
+    "Tijdelijke bestanden opruimen",
+    clean_temp,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
 
 
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host "                ONDERHOUD VOLTOOID" -ForegroundColor Green
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "BELANGRIJK:" -ForegroundColor Yellow
-Write-Host "1. Installeer alle beschikbare Windows Updates."
-Write-Host "2. Controleer eventueel 'Optionele updates' voor drivers."
-Write-Host "3. Start de pc daarna opnieuw op."
-Write-Host ""
-Write-Host "Persoonlijke bestanden zijn door dit script niet verwijderd." -ForegroundColor Cyan
-Write-Host ""
+# ============================================================
+# GRAPHICS CARD
+# ============================================================
 
-$restart = Read-Host "Wil je Windows nu opnieuw opstarten? (J/N)"
+graphics_card = make_card(content)
 
-if ($restart -match "^[JjYy]$") {
-    Restart-Computer
-}
+graphics_card.grid(
+    row=0,
+    column=1,
+    sticky="nsew",
+    padx=(7, 0),
+    pady=7,
+)
+
+tk.Label(
+    graphics_card,
+    text="🎮  Graphics",
+    font=("Segoe UI", 15, "bold"),
+    fg=TEXT,
+    bg=CARD,
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(18, 3),
+)
+
+tk.Label(
+    graphics_card,
+    text="Voor beeldscherm- en GPU-problemen.",
+    font=("Segoe UI", 9),
+    fg=MUTED,
+    bg=CARD,
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(0, 12),
+)
+
+make_button(
+    graphics_card,
+    "Graphics Center openen",
+    graphics_tools,
+    accent=ACCENT,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
+
+make_button(
+    graphics_card,
+    "Apparaatbeheer openen",
+    open_device_manager,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
+
+make_button(
+    graphics_card,
+    "Windows Update openen",
+    open_windows_update,
+).pack(
+    fill="x",
+    padx=14,
+    pady=4,
+)
+
+
+# ============================================================
+# RESET CARD
+# ============================================================
+
+reset_card = make_card(content)
+
+reset_card.grid(
+    row=1,
+    column=0,
+    columnspan=2,
+    sticky="ew",
+    pady=7,
+)
+
+tk.Label(
+    reset_card,
+    text="🧹  FreddoDev Reset & Cleanup",
+    font=("Segoe UI", 15, "bold"),
+    fg=TEXT,
+    bg=CARD,
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(18, 3),
+)
+
+tk.Label(
+    reset_card,
+    text=(
+        "Ruimt geselecteerde download-/mediafolders op en repareert Windows. "
+        "Steam, Discord en Documenten blijven behouden."
+    ),
+    font=("Segoe UI", 9),
+    fg=MUTED,
+    bg=CARD,
+    wraplength=800,
+    justify="left",
+).pack(
+    anchor="w",
+    padx=18,
+    pady=(0, 12),
+)
+
+reset_buttons = tk.Frame(
+    reset_card,
+    bg=CARD,
+)
+
+reset_buttons.pack(
+    fill="x",
+    padx=14,
+    pady=(0, 16),
+)
+
+make_button(
+    reset_buttons,
+    "🧹  Reset & Cleanup",
+    reset_freddodev,
+    accent=RED,
+).pack(
+    side="left",
+    fill="x",
+    expand=True,
+    padx=(0, 5),
+)
+
+make_button(
+    reset_buttons,
+    "Herstelpunt maken",
+    create_restore_point,
+).pack(
+    side="left",
+    fill="x",
+    expand=True,
+    padx=(5, 0),
+)
+
+
+# ============================================================
+# QUICK TOOLS
+# ============================================================
+
+quick = tk.Frame(
+    content,
+    bg=BG,
+)
+
+quick.grid(
+    row=2,
+    column=0,
+    columnspan=2,
+    sticky="ew",
+    pady=7,
+)
+
+quick.grid_columnconfigure(
+    0,
+    weight=1,
+)
+
+quick.grid_columnconfigure(
+    1,
+    weight=1,
+)
+
+quick.grid_columnconfigure(
+    2,
+    weight=1,
+)
+
+make_button(
+    quick,
+    "⚙  Energie-instellingen",
+    open_power_settings,
+).grid(
+    row=0,
+    column=0,
+    sticky="ew",
+    padx=(0, 5),
+)
+
+make_button(
+    quick,
+    "🖥  Systeeminfo",
+    system_info,
+).grid(
+    row=0,
+    column=1,
+    sticky="ew",
+    padx=5,
+)
+
+make_button(
+    quick,
+    "❔  Microsoft Support",
+    open_support,
+).grid(
+    row=0,
+    column=2,
+    sticky="ew",
+    padx=(5, 0),
+)
+
+
+# ============================================================
+# STATUS
+# ============================================================
+
+status_frame = tk.Frame(
+    root,
+    bg=BG,
+)
+
+status_frame.pack(
+    fill="x",
+    padx=32,
+    pady=(5, 18),
+)
+
+status_var = tk.StringVar(
+    value="●  Systeem gereed"
+)
+
+status_label = tk.Label(
+    status_frame,
+    textvariable=status_var,
+    font=("Segoe UI", 9, "bold"),
+    fg=GREEN,
+    bg=BG,
+)
+
+status_label.pack(
+    side="left"
+)
+
+tk.Label(
+    status_frame,
+    text="FreddoDev • Windows 11",
+    font=("Segoe UI", 9),
+    fg=MUTED,
+    bg=BG,
+).pack(
+    side="right"
+)
+
+
+# ============================================================
+# START
+# ============================================================
+
+root.mainloop()
