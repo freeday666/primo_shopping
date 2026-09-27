@@ -1,0 +1,257 @@
+@echo off
+setlocal EnableExtensions
+title Windows 11 - Onderhoud en Reparatie
+color 0B
+
+:: =========================================================
+:: WINDOWS 11 VEILIG ONDERHOUD
+:: =========================================================
+
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo ========================================================
+    echo  Dit programma moet als ADMINISTRATOR worden uitgevoerd.
+    echo ========================================================
+    echo.
+    pause
+    exit /b 1
+)
+
+:MENU
+cls
+echo.
+echo ============================================================
+echo              WINDOWS 11 ONDERHOUDSCENTRUM
+echo ============================================================
+echo.
+echo   [1] Tijdelijke bestanden opruimen
+echo   [2] Windows Update openen
+echo   [3] Windows repareren ^(DISM + SFC^)
+echo   [4] Schijf controleren
+echo   [5] Opstartprogramma's openen
+echo   [6] Opslagbeheer openen
+echo   [7] VOLLEDIG VEILIG ONDERHOUD
+echo   [8] PC opnieuw opstarten
+echo   [9] Afsluiten
+echo.
+echo ============================================================
+set /p keuze= Kies een optie: 
+
+if "%keuze%"=="1" goto CLEAN
+if "%keuze%"=="2" goto UPDATE
+if "%keuze%"=="3" goto REPAIR
+if "%keuze%"=="4" goto DISK
+if "%keuze%"=="5" goto STARTUP
+if "%keuze%"=="6" goto STORAGE
+if "%keuze%"=="7" goto FULL
+if "%keuze%"=="8" goto RESTART
+if "%keuze%"=="9" goto END
+
+goto MENU
+
+
+:CLEAN
+cls
+echo ============================================================
+echo                 TIJDELIJKE BESTANDEN
+echo ============================================================
+echo.
+echo Tijdelijke gebruikersbestanden worden verwijderd...
+echo.
+
+del /f /s /q "%TEMP%\*" >nul 2>&1
+for /d %%D in ("%TEMP%\*") do rd /s /q "%%D" >nul 2>&1
+
+echo Windows tijdelijke bestanden worden verwijderd...
+del /f /s /q "C:\Windows\Temp\*" >nul 2>&1
+for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" >nul 2>&1
+
+echo.
+echo Klaar.
+pause
+goto MENU
+
+
+:UPDATE
+cls
+echo ============================================================
+echo                    WINDOWS UPDATE
+echo ============================================================
+echo.
+echo De officiele Windows Update-pagina wordt geopend.
+echo.
+start "" ms-settings:windowsupdate
+pause
+goto MENU
+
+
+:REPAIR
+cls
+echo ============================================================
+echo                WINDOWS REPAREREN
+echo ============================================================
+echo.
+echo DISM wordt uitgevoerd.
+echo Dit kan langere tijd duren.
+echo.
+
+DISM /Online /Cleanup-Image /RestoreHealth
+
+echo.
+echo ============================================================
+echo SFC wordt uitgevoerd.
+echo ============================================================
+echo.
+
+sfc /scannow
+
+echo.
+echo ============================================================
+echo Windows reparatie is voltooid.
+echo ============================================================
+pause
+goto MENU
+
+
+:DISK
+cls
+echo ============================================================
+echo                    SCHIJFCONTROLEREN
+echo ============================================================
+echo.
+echo C: wordt gecontroleerd zonder direct opnieuw op te starten.
+echo.
+
+chkdsk C: /scan
+
+echo.
+echo Schijfcontrole voltooid.
+pause
+goto MENU
+
+
+:STARTUP
+cls
+echo ============================================================
+echo                 OPSTARTPROGRAMMA'S
+echo ============================================================
+echo.
+echo Windows instellingen wordt geopend.
+echo.
+
+start "" ms-settings:startupapps
+pause
+goto MENU
+
+
+:STORAGE
+cls
+echo ============================================================
+echo                    OPSLAGBEHEER
+echo ============================================================
+echo.
+echo Windows Opslag wordt geopend.
+echo.
+
+start "" ms-settings:storagesense
+pause
+goto MENU
+
+
+:FULL
+cls
+echo ============================================================
+echo              VOLLEDIG VEILIG ONDERHOUD
+echo ============================================================
+echo.
+echo Dit voert uit:
+echo.
+echo  1. Tijdelijke bestanden opruimen
+echo  2. Windows Update-cache opruimen
+echo  3. Windows componenten opruimen
+echo  4. Windows repareren met DISM
+echo  5. Systeembestanden repareren met SFC
+echo  6. C: schijf controleren
+echo.
+echo Persoonlijke bestanden in Downloads, Documenten,
+echo Afbeeldingen en Video's worden NIET verwijderd.
+echo.
+choice /C JN /N /M "Doorgaan? [J/N]: "
+
+if errorlevel 2 goto MENU
+
+echo.
+echo ============================================================
+echo [1/6] TIJDELIJKE BESTANDEN
+echo ============================================================
+del /f /s /q "%TEMP%\*" >nul 2>&1
+for /d %%D in ("%TEMP%\*") do rd /s /q "%%D" >nul 2>&1
+
+del /f /s /q "C:\Windows\Temp\*" >nul 2>&1
+for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" >nul 2>&1
+
+echo Klaar.
+
+echo.
+echo ============================================================
+echo [2/6] WINDOWS UPDATE CACHE
+echo ============================================================
+net stop wuauserv >nul 2>&1
+net stop bits >nul 2>&1
+
+del /f /s /q "C:\Windows\SoftwareDistribution\Download\*" >nul 2>&1
+for /d %%D in ("C:\Windows\SoftwareDistribution\Download\*") do rd /s /q "%%D" >nul 2>&1
+
+net start bits >nul 2>&1
+net start wuauserv >nul 2>&1
+
+echo Klaar.
+
+echo.
+echo ============================================================
+echo [3/6] WINDOWS COMPONENT STORE
+echo ============================================================
+DISM /Online /Cleanup-Image /StartComponentCleanup
+
+echo.
+echo ============================================================
+echo [4/6] WINDOWS REPAREREN
+echo ============================================================
+DISM /Online /Cleanup-Image /RestoreHealth
+
+echo.
+echo ============================================================
+echo [5/6] SYSTEEMBESTANDEN
+echo ============================================================
+sfc /scannow
+
+echo.
+echo ============================================================
+echo [6/6] SCHIJF
+echo ============================================================
+chkdsk C: /scan
+
+echo.
+echo ============================================================
+echo             ONDERHOUD IS VOLTOOID
+echo ============================================================
+echo.
+echo Start Windows opnieuw op.
+echo.
+choice /C JN /N /M "Nu opnieuw opstarten? [J/N]: "
+
+if errorlevel 2 goto MENU
+
+shutdown /r /t 0
+goto END
+
+
+:RESTART
+shutdown /r /t 0
+goto END
+
+
+:END
+endlocal
+exit /b 0
