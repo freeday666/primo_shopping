@@ -3,99 +3,563 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discord Bot Hosting</title>
+  <meta name="theme-color" content="#080b14">
+  <title>Nexus Host — Discord Bot Hosting</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      color-scheme: dark;
+      --bg: #080b14;
+      --panel: rgba(17, 23, 39, .76);
+      --muted: #98a2b8;
+      --text: #f4f6ff;
+      --purple: #8b7cff;
+      --blue: #5865f2;
+      --line: rgba(255, 255, 255, .09);
     }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 50% -20%, rgba(88, 101, 242, .2), transparent 55%),
+        var(--bg);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    body::before {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      content: "";
+      pointer-events: none;
+      opacity: .22;
+      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
+
+    .glow {
+      position: fixed;
+      z-index: -1;
+      top: 28%;
+      left: 50%;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: rgba(91, 72, 255, .13);
+      filter: blur(120px);
+      transform: translateX(-50%);
+      animation: breathe 7s ease-in-out infinite alternate;
+    }
+
+    .container {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      animation: slide-down .7s ease both;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      text-decoration: none;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+
+    .brand-icon {
       display: grid;
+      width: 36px;
+      height: 36px;
       place-items: center;
-      font-family: Arial, sans-serif;
-      color: #fff;
-      background: linear-gradient(135deg, #111827, #202b46);
+      border: 1px solid rgba(171, 159, 255, .3);
+      border-radius: 11px;
+      color: #c5bdff;
+      background: linear-gradient(145deg, rgba(139,124,255,.26), rgba(88,101,242,.08));
+      box-shadow: 0 0 25px rgba(139,124,255,.15);
+    }
+
+    .brand-icon svg { width: 19px; height: 19px; }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #c1c8d8;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #42d392;
+      box-shadow: 0 0 12px #42d392;
+      animation: pulse 2s infinite;
     }
 
     main {
-      width: min(90%, 620px);
-      padding: 56px 32px;
+      padding: 100px 0 70px;
       text-align: center;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
 
-    .badge {
-      display: inline-block;
-      margin-bottom: 18px;
-      padding: 8px 14px;
-      color: #c7d2fe;
-      background: rgba(88, 101, 242, 0.18);
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border: 1px solid rgba(139,124,255,.22);
       border-radius: 999px;
-      font-size: 14px;
+      color: #c9c2ff;
+      background: rgba(139,124,255,.08);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .3px;
+      animation: fade-up .7s .1s both;
+    }
+
+    .eyebrow span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+      box-shadow: 0 0 10px var(--purple);
     }
 
     h1 {
-      margin: 0 0 16px;
-      font-size: clamp(2rem, 7vw, 3.5rem);
+      max-width: 850px;
+      margin: 25px auto 18px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(44px, 8vw, 82px);
+      line-height: 1.02;
+      letter-spacing: -5px;
+      animation: fade-up .8s .2s both;
     }
 
-    p {
-      margin: 0 auto 30px;
-      max-width: 460px;
-      color: #cbd5e1;
-      line-height: 1.7;
+    h1 em {
+      color: transparent;
+      background: linear-gradient(95deg, #b7adff, #7d8cff 55%, #77d7ff);
+      background-clip: text;
+      -webkit-background-clip: text;
+      font-style: normal;
     }
 
-    .discord-button {
+    .intro {
+      max-width: 590px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.75;
+      animation: fade-up .8s .3s both;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 13px;
+      margin-top: 32px;
+      animation: fade-up .8s .4s both;
+    }
+
+    .button {
+      min-height: 50px;
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      padding: 15px 24px;
-      color: white;
-      background: #5865f2;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+      border: 1px solid var(--line);
       border-radius: 12px;
+      color: var(--text);
       text-decoration: none;
-      font-weight: bold;
-      transition: background 0.2s, transform 0.2s;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform .2s, border-color .2s, background .2s, box-shadow .2s;
     }
 
-    .discord-button:hover {
-      background: #4752c4;
-      transform: translateY(-2px);
+    .button:hover { transform: translateY(-3px); }
+
+    .button-primary {
+      border-color: transparent;
+      background: linear-gradient(110deg, #6875ff, #806bff);
+      box-shadow: 0 8px 28px rgba(104,117,255,.25);
     }
 
-    .discord-button svg {
-      width: 25px;
-      height: 25px;
-      fill: currentColor;
+    .button-primary:hover {
+      box-shadow: 0 12px 36px rgba(104,117,255,.4);
+    }
+
+    .button-secondary {
+      background: rgba(255,255,255,.035);
+    }
+
+    .button-secondary:hover {
+      border-color: rgba(255,255,255,.2);
+      background: rgba(255,255,255,.07);
+    }
+
+    .button svg { width: 19px; height: 19px; fill: currentColor; }
+
+    .dashboard {
+      position: relative;
+      max-width: 850px;
+      margin: 78px auto 0;
+      padding: 1px;
+      overflow: hidden;
+      border-radius: 19px;
+      background: linear-gradient(135deg, rgba(153,142,255,.45), rgba(255,255,255,.06) 40%, rgba(88,101,242,.28));
+      box-shadow: 0 35px 100px rgba(0,0,0,.4), 0 0 70px rgba(88,101,242,.1);
+      animation: fade-up .9s .5s both, float 6s 1.5s ease-in-out infinite;
+    }
+
+    .dashboard-inner {
+      padding: 23px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(19,25,42,.97), rgba(11,15,27,.98));
+      text-align: left;
+    }
+
+    .dash-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 19px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dash-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .bot-avatar {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      place-items: center;
+      border-radius: 11px;
+      color: #d8d3ff;
+      background: linear-gradient(135deg, #655cf4, #a176ff);
+    }
+
+    .bot-avatar svg { width: 18px; height: 18px; }
+
+    .online-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid rgba(66,211,146,.18);
+      border-radius: 999px;
+      color: #7ce5b4;
+      background: rgba(66,211,146,.07);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .online-label .status-dot { width: 6px; height: 6px; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding-top: 17px;
+    }
+
+    .metric {
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,.025);
+      transition: border-color .25s, transform .25s;
+    }
+
+    .metric:hover {
+      transform: translateY(-3px);
+      border-color: rgba(139,124,255,.35);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .metric-value {
+      margin-top: 9px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 23px;
+      font-weight: 600;
+    }
+
+    .metric-value small {
+      margin-left: 4px;
+      color: #858fa6;
+      font-family: "DM Sans", sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .meter {
+      height: 4px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: rgba(255,255,255,.08);
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #737bff, #a17cff);
+      animation: load-in 1.5s .8s both;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 75px;
+      text-align: left;
+    }
+
+    .feature {
+      padding: 21px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255,255,255,.025);
+      transition: transform .25s, background .25s, border-color .25s;
+    }
+
+    .feature:hover {
+      transform: translateY(-5px);
+      border-color: rgba(139,124,255,.28);
+      background: rgba(255,255,255,.045);
+    }
+
+    .feature-icon {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      margin-bottom: 16px;
+      place-items: center;
+      border: 1px solid rgba(139,124,255,.2);
+      border-radius: 11px;
+      color: #b9b0ff;
+      background: rgba(139,124,255,.1);
+    }
+
+    .feature-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feature h2 {
+      margin: 0 0 8px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 15px;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    footer {
+      padding: 25px 0 30px;
+      border-top: 1px solid var(--line);
+      color: #737e94;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slide-down {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      50% { opacity: .55; box-shadow: 0 0 4px #42d392; }
+    }
+
+    @keyframes breathe {
+      to { opacity: .55; transform: translateX(-50%) scale(1.18); }
+    }
+
+    @keyframes float {
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes load-in {
+      from { width: 0; }
+    }
+
+    @media (max-width: 650px) {
+      header { height: 70px; }
+      main { padding-top: 75px; }
+      h1 { letter-spacing: -2.5px; }
+      .intro { font-size: 15px; }
+      .actions { flex-direction: column; align-items: stretch; max-width: 310px; margin: 28px auto 0; }
+      .dashboard { margin-top: 58px; }
+      .dashboard-inner { padding: 16px; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { padding: 14px; }
+      .features { grid-template-columns: 1fr; margin-top: 55px; }
+      .nav-status { font-size: 11px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
     }
   </style>
 </head>
-<body>
-  <main>
-    <span class="badge">Snel • Betrouwbaar • 24/7 online</span>
-    <h1>Discord Bot Hosting</h1>
-    <p>
-      Host je Discord-bot eenvoudig en houd hem altijd online.
-      Sluit je aan bij onze community voor meer informatie en hulp.
-    </p>
 
-    <a
-      class="discord-button"
-      href="https://discord.gg/p7z48sCBZE"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M19.73 5.33a19.2 19.2 0 0 0-4.73-1.47.07.07 0 0 0-.08.04c-.2.36-.42.83-.58 1.2a17.7 17.7 0 0 0-5.3 0c-.16-.38-.39-.84-.59-1.2a.08.08 0 0 0-.08-.04 19.1 19.1 0 0 0-4.73 1.47.07.07 0 0 0-.03.03C.6 9.76-.22 14.05.18 18.3c0 .02.01.04.03.05a19.3 19.3 0 0 0 5.8 2.93.08.08 0 0 0 .09-.03c.45-.62.85-1.28 1.2-1.97a.08.08 0 0 0-.04-.11 12.7 12.7 0 0 1-1.81-.86.08.08 0 0 1-.01-.13c.12-.09.24-.18.35-.27a.08.08 0 0 1 .08-.01c3.8 1.74 7.92 1.74 11.67 0a.08.08 0 0 1 .08.01c.11.1.23.19.35.28a.08.08 0 0 1-.01.13c-.58.34-1.18.63-1.81.85a.08.08 0 0 0-.04.12c.35.69.75 1.34 1.2 1.97a.08.08 0 0 0 .09.03 19.2 19.2 0 0 0 5.81-2.93.08.08 0 0 0 .03-.05c.48-4.92-.8-9.17-3.42-12.94a.06.06 0 0 0-.03-.03ZM8.02 15.67c-1.14 0-2.08-1.05-2.08-2.34s.92-2.34 2.08-2.34c1.17 0 2.1 1.06 2.08 2.34 0 1.29-.92 2.34-2.08 2.34Zm7.96 0c-1.14 0-2.08-1.05-2.08-2.34s.91-2.34 2.08-2.34c1.17 0 2.1 1.06 2.08 2.34 0 1.29-.91 2.34-2.08 2.34Z"/>
-      </svg>
-      Join onze Discord
-    </a>
-  </main>
+<body>
+  <div class="glow"></div>
+
+  <div class="container">
+    <header>
+      <a class="brand" href="#" aria-label="Nexus Host home">
+        <span class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/>
+            <path d="m8.5 9.2 3.5-2 3.5 2v5.6l-3.5 2-3.5-2V9.2Z"/>
+          </svg>
+        </span>
+        Nexus Host
+      </a>
+
+      <div class="nav-status"><span class="status-dot"></span> Alle systemen operationeel</div>
+    </header>
+
+    <main>
+      <div class="eyebrow"><span></span> DISCORD BOT HOSTING, SIMPEL GEMAAKT</div>
+
+      <h1>Jouw bot.<br><em>Altijd online.</em></h1>
+
+      <p class="intro">
+        Betrouwbare hosting voor Discord-bots, zonder gedoe.
+        Sluit je aan bij onze community en ontdek hoe makkelijk het kan zijn.
+      </p>
+
+      <div class="actions">
+        <a class="button button-primary" href="https://discord.gg/p7z48sCBZE" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19.73 5.33a19.2 19.2 0 0 0-4.73-1.47.07.07 0 0 0-.08.04c-.2.36-.42.83-.58 1.2a17.7 17.7 0 0 0-5.3 0c-.16-.38-.39-.84-.59-1.2a.08.08 0 0 0-.08-.04 19.1 19.1 0 0 0-4.73 1.47.07.07 0 0 0-.03.03C.6 9.76-.22 14.05.18 18.3c0 .02.01.04.03.05a19.3 19.3 0 0 0 5.8 2.93.08.08 0 0 0 .09-.03c.45-.62.85-1.28 1.2-1.97a.08.08 0 0 0-.04-.11 12.7 12.7 0 0 1-1.81-.86.08.08 0 0 1-.01-.13c.12-.09.24-.18.35-.27a.08.08 0 0 1 .08-.01c3.8 1.74 7.92 1.74 11.67 0a.08.08 0 0 1 .08.01c.11.1.23.19.35.28a.08.08 0 0 1-.01.13c-.58.34-1.18.63-1.81.85a.08.08 0 0 0-.04.12c.35.69.75 1.34 1.2 1.97a.08.08 0 0 0 .09.03 19.2 19.2 0 0 0 5.81-2.93.08.08 0 0 0 .03-.05c.48-4.92-.8-9.17-3.42-12.94a.06.06 0 0 0-.03-.03ZM8.02 15.67c-1.14 0-2.08-1.05-2.08-2.34s.92-2.34 2.08-2.34c1.17 0 2.1 1.06 2.08 2.34 0 1.29-.92 2.34-2.08 2.34Zm7.96 0c-1.14 0-2.08-1.05-2.08-2.34s.91-2.34 2.08-2.34c1.17 0 2.1 1.06 2.08 2.34 0 1.29-.91 2.34-2.08 2.34Z"/>
+          </svg>
+          Join onze Discord
+        </a>
+
+        <a class="button button-secondary" href="#features">Ontdek de voordelen <span aria-hidden="true">↓</span></a>
+      </div>
+
+      <section class="dashboard" aria-label="Voorbeeld hosting dashboard">
+        <div class="dashboard-inner">
+          <div class="dash-top">
+            <div class="dash-title">
+              <span class="bot-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="4" y="7" width="16" height="13" rx="4"/>
+                  <path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/>
+                </svg>
+              </span>
+              <span>Bot Control Panel</span>
+            </div>
+            <span class="online-label"><span class="status-dot"></span> Online</span>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Uptime</div>
+              <div class="metric-value">99.9<small>%</small></div>
+              <div class="meter"><span style="width:99.9%"></span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Geheugengebruik</div>
+              <div class="metric-value">42<small>MB</small></div>
+              <div class="meter"><span style="width:42%"></span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Status</div>
+              <div class="metric-value">Actief</div>
+              <div class="meter"><span style="width:100%"></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="features" id="features" aria-label="Hosting voordelen">
+        <article class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>
+          </div>
+          <h2>Altijd online</h2>
+          <p>Houd je bot beschikbaar voor je community, dag en nacht.</p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 3 4.5 7v5c0 4.5 3.2 7.5 7.5 9 4.3-1.5 7.5-4.5 7.5-9V7L12 3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h2>Betrouwbaar</h2>
+          <p>Een stabiele omgeving, zodat jij je kunt richten op je bot.</p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 8v4l2.5 1.5"/><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <h2>Snel geregeld</h2>
+          <p>Begin eenvoudig en krijg hulp via onze Discord-community.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer>© 2026 Nexus Host · Gemaakt voor Discord-bot developers</footer>
+  </div>
 </body>
 </html>
